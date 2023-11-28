@@ -10,6 +10,7 @@ import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.HKDFParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
+import org.bouncycastle.crypto.prng.FixedSecureRandom;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.interfaces.ECPrivateKey;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
@@ -17,6 +18,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.bouncycastle.util.encoders.Hex;
+import org.web3j.crypto.MnemonicUtils;
 
 import javax.crypto.NoSuchPaddingException;
 import java.math.BigInteger;
@@ -48,6 +50,33 @@ public class Ecies {
         ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(CURVE_NAME);
         KeyPairGenerator g = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
         g.initialize(ecSpec, SECURE_RANDOM);
+        KeyPair keyPair = g.generateKeyPair();
+        return new ECKeyPair((ECPublicKey) keyPair.getPublic(), (ECPrivateKey) keyPair.getPrivate());
+    }
+
+    /**
+     * Generates new key pair consists of {@link ECPublicKey} and {@link ECPrivateKey}  from mnemonic
+     * @param mnemonic mnemonic phrase
+     * @return new EC key pair
+     */
+    @SneakyThrows
+    public static ECKeyPair generateEcKeyPair(String mnemonic) {
+        return generateEcKeyPair(mnemonic, "");
+    }
+
+    /**
+     * Generates new key pair consists of {@link ECPublicKey} and {@link ECPrivateKey}
+     *
+     * @param mnemonic mnemonic phrase
+     * @param passphrase passphrase
+     * @return new EC key pair
+     */
+    @SneakyThrows
+    public static ECKeyPair generateEcKeyPair(String mnemonic, String passphrase) {
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, passphrase);
+        ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec("secp256k1");
+        KeyPairGenerator g = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+        g.initialize(ecSpec, new FixedSecureRandom(seed));
         KeyPair keyPair = g.generateKeyPair();
         return new ECKeyPair((ECPublicKey) keyPair.getPublic(), (ECPrivateKey) keyPair.getPrivate());
     }
